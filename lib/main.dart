@@ -142,6 +142,10 @@ class _DailyPlannerState extends State<DailyPlanner> {
         final repeat = planData['repeat'] ?? 'none';
         if (repeat == 'none') return;
 
+        // Ensure color is a Color object
+        final colorValue = planData['color'];
+        final Color color = colorValue is Color ? colorValue : Color(colorValue is int ? colorValue : 0xFF3B82F6);
+
         if (repeat == 'daily') {
           final targetDate = planDate.add(const Duration(days: 1));
           if (targetDate.isAtSameMomentAs(tomorrow) || targetDate.isAfter(tomorrow)) {
@@ -152,7 +156,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
               'hour': hour,
               'planData': {
                 'text': planData['text'],
-                'color': planData['color'],
+                'color': color,
                 'completed': false,
                 'priority': planData['priority'],
                 'repeat': repeat,
@@ -169,7 +173,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
               'hour': hour,
               'planData': {
                 'text': planData['text'],
-                'color': planData['color'],
+                'color': color,
                 'completed': false,
                 'priority': planData['priority'],
                 'repeat': repeat,

@@ -104,9 +104,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
           _allPlans[dateKey] = {};
           (hours as Map<String, dynamic>).forEach((hourStr, planData) {
             final colorValue = planData['color'];
-            final Color color = colorValue is Color 
-                ? colorValue 
-                : (colorValue is int ? Color(colorValue) : const Color(0xFF3B82F6));
+            final int color = colorValue is int ? colorValue : (colorValue is Color ? colorValue.value : 0xFF3B82F6);
             _allPlans[dateKey]![int.parse(hourStr)] = {
               'text': planData['text'],
               'color': color,
@@ -153,11 +151,9 @@ class _DailyPlannerState extends State<DailyPlanner> {
         final repeat = planData['repeat'] ?? 'none';
         if (repeat == 'none') return;
 
-        // Ensure color is a Color object
+        // Ensure color is an integer
         final colorValue = planData['color'];
-        final Color color = colorValue is Color 
-            ? colorValue 
-            : (colorValue is int ? Color(colorValue) : const Color(0xFF3B82F6));
+        final int color = colorValue is int ? colorValue : (colorValue is Color ? colorValue.value : 0xFF3B82F6);
 
         if (repeat == 'daily') {
           final targetDate = planDate.add(const Duration(days: 1));
@@ -246,10 +242,8 @@ class _DailyPlannerState extends State<DailyPlanner> {
     List<Color> gradientColors = [];
     for (int i = 0; i < 24; i++) {
       final planData = dayPlans[i];
-      final colorValue = planData?['color'];
-      final Color color = colorValue is Color 
-          ? colorValue 
-          : (colorValue is int ? Color(colorValue) : const Color(0xFFE2E8F0));
+      final colorValue = planData?['color'] as int?;
+      final Color color = Color(colorValue ?? 0xFFE2E8F0);
       gradientColors.add(color);
     }
 
@@ -595,10 +589,8 @@ class _DailyPlannerState extends State<DailyPlanner> {
           final isEditing = _editingHour == hour;
           final planData = dayPlans[hour];
           final plan = planData?['text'] ?? '';
-          final colorValue = planData?['color'];
-          final planColor = colorValue is Color 
-              ? colorValue 
-              : (colorValue is int ? Color(colorValue) : const Color(0xFF3B82F6));
+          final colorValue = planData?['color'] as int?;
+          final planColor = Color(colorValue ?? 0xFF3B82F6);
 
           if (isEditing) {
             return _buildEditingSlot(hour, Colors.white, dayPlans);
@@ -704,10 +696,8 @@ class _DailyPlannerState extends State<DailyPlanner> {
                   final hour = entry.key;
                   final planData = entry.value;
                   final plan = planData['text'] ?? '';
-                  final colorValue = planData['color'];
-                  final planColor = colorValue is Color 
-                      ? colorValue 
-                      : (colorValue is int ? Color(colorValue) : const Color(0xFF3B82F6));
+                  final colorValue = planData['color'] as int?;
+                  final planColor = Color(colorValue ?? 0xFF3B82F6);
                   final isCompleted = planData['completed'] ?? false;
                   
                   return ListTile(
@@ -982,10 +972,8 @@ class _DailyPlannerState extends State<DailyPlanner> {
   Widget _buildEditingSlot(int hour, Color backgroundColor, Map<int, Map<String, dynamic>> dayPlans) {
     final planData = dayPlans[hour];
     final controller = TextEditingController(text: planData?['text'] ?? '');
-    final colorValue = planData?['color'];
-    Color selectedColor = colorValue is Color 
-        ? colorValue 
-        : (colorValue is int ? Color(colorValue) : const Color(0xFF3B82F6));
+    final colorValue = planData?['color'] as int?;
+    Color selectedColor = Color(colorValue ?? 0xFF3B82F6);
     String selectedPriority = planData?['priority'] ?? 'medium';
     String selectedRepeat = planData?['repeat'] ?? 'none';
     List<String> selectedReminders = List<String>.from(planData?['reminders'] ?? []);
@@ -998,7 +986,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
         }
         _allPlans[dateKey]![hour] = {
           'text': controller.text.trim(),
-          'color': selectedColor,
+          'color': selectedColor.value,
           'priority': selectedPriority,
           'repeat': selectedRepeat,
           'reminders': selectedReminders,
@@ -1952,10 +1940,8 @@ class _DailyPlannerState extends State<DailyPlanner> {
                       final date = result['date'] as DateTime;
                       final hour = result['hour'] as int;
                       final plan = result['plan'] as Map<String, dynamic>;
-                      final colorValue = plan['color'];
-                      final planColor = colorValue is Color 
-                          ? colorValue 
-                          : (colorValue is int ? Color(colorValue) : const Color(0xFF3B82F6));
+                      final colorValue = plan['color'] as int?;
+                      final planColor = Color(colorValue ?? 0xFF3B82F6);
 
                       return ListTile(
                         leading: Container(

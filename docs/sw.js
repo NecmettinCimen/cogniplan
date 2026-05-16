@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cogniplan-v3';
+const CACHE_NAME = 'cogniplan-v4';
 const urlsToCache = [
   './',
   './index.html',
@@ -7,6 +7,8 @@ const urlsToCache = [
   './flutter_bootstrap.js',
   './manifest.json',
   './favicon.png',
+  './assets/',
+  './canvaskit/',
 ];
 
 self.addEventListener('install', (event) => {

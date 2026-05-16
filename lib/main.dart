@@ -216,9 +216,11 @@ class _DailyPlannerState extends State<DailyPlanner> {
     _allPlans.forEach((dateKey, hours) {
       encoded[dateKey] = {};
       hours.forEach((hour, planData) {
+        final colorValue = planData['color'];
+        final int colorInt = colorValue is int ? colorValue : (colorValue is Color ? colorValue.value : 0xFF3B82F6);
         encoded[dateKey]![hour.toString()] = {
           'text': planData['text'],
-          'color': planData['color'].value,
+          'color': colorInt,
           'completed': planData['completed'] ?? false,
           'priority': planData['priority'] ?? 'medium',
           'repeat': planData['repeat'] ?? 'none',
@@ -941,7 +943,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                               if (!_allPlans.containsKey(dateKey)) {
                                 _allPlans[dateKey] = {};
                               }
-                              _allPlans[dateKey]![hour] = {'text': 'Uyku', 'color': Colors.purple};
+                              _allPlans[dateKey]![hour] = {'text': 'Uyku', 'color': Colors.purple.value};
                               _savePlans();
                             });
                           }
@@ -952,7 +954,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                               if (!_allPlans.containsKey(dateKey)) {
                                 _allPlans[dateKey] = {};
                               }
-                              _allPlans[dateKey]![hour] = {'text': 'Uyku', 'color': Colors.purple};
+                              _allPlans[dateKey]![hour] = {'text': 'Uyku', 'color': Colors.purple.value};
                               _savePlans();
                             });
                           }

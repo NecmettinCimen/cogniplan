@@ -223,6 +223,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
     final selectedDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
     final isToday = today.isAtSameMomentAs(selectedDay);
     final dayPlans = _allPlans[_dateKey(_selectedDate)] ?? {};
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     // Build gradient colors from daily slot colors
     List<Color> gradientColors = [];
@@ -237,13 +238,13 @@ class _DailyPlannerState extends State<DailyPlanner> {
       appBar: AppBar(
         backgroundColor: _isDarkMode ? const Color(0xFF1E293B) : Colors.white,
         elevation: 0,
-        toolbarHeight: 90,
+        toolbarHeight: isMobile ? 75 : 90,
         flexibleSpace: Column(
           children: [
             // Color blocks at the top
             Container(
-              height: 6,
-              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              height: isMobile ? 4 : 6,
+              margin: EdgeInsets.fromLTRB(isMobile ? 12 : 16, isMobile ? 8 : 12, isMobile ? 12 : 16, 0),
               child: Row(
                 children: List.generate(24, (index) {
                   final color = gradientColors[index];
@@ -259,27 +260,27 @@ class _DailyPlannerState extends State<DailyPlanner> {
             // Header content
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 16, vertical: isMobile ? 6 : 8),
                 child: Row(
                   children: [
                     // Navigation left
                     Container(
                       decoration: BoxDecoration(
                         color: _isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
                       ),
                       child: IconButton(
-                        icon: Icon(Icons.chevron_left, color: _isDarkMode ? Colors.white : const Color(0xFF475569), size: 20),
+                        icon: Icon(Icons.chevron_left, color: _isDarkMode ? Colors.white : const Color(0xFF475569), size: isMobile ? 18 : 20),
                         onPressed: () {
                           setState(() {
                             _selectedDate = _selectedDate.subtract(const Duration(days: 1));
                             _editingHour = null;
                           });
                         },
-                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        constraints: BoxConstraints(minWidth: isMobile ? 36 : 40, minHeight: isMobile ? 36 : 40),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    SizedBox(width: isMobile ? 10 : 14),
                     // Date and time
                     Expanded(
                       child: Column(
@@ -288,30 +289,32 @@ class _DailyPlannerState extends State<DailyPlanner> {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                _formatDate(_selectedDate),
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w700,
-                                  color: _isDarkMode ? Colors.white : const Color(0xFF1E293B),
-                                  letterSpacing: -0.3,
+                              Flexible(
+                                child: Text(
+                                  _formatDate(_selectedDate),
+                                  style: TextStyle(
+                                    fontSize: isMobile ? 14 : 17,
+                                    fontWeight: FontWeight.w700,
+                                    color: _isDarkMode ? Colors.white : const Color(0xFF1E293B),
+                                    letterSpacing: -0.3,
+                                  ),
                                 ),
                               ),
                               if (isToday) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(3),
                                   decoration: BoxDecoration(
                                     color: Colors.blue.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
                                       color: Colors.blue.withOpacity(0.2),
                                       width: 1,
                                     ),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.today,
-                                    size: 14,
+                                    size: isMobile ? 12 : 14,
                                     color: Colors.blue,
                                   ),
                                 ),
@@ -321,36 +324,65 @@ class _DailyPlannerState extends State<DailyPlanner> {
                         ],
                       ),
                     ),
-                    // Clock
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
+                    if (!isMobile) ...[
+                      // Clock - show time on desktop
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: StreamBuilder(
+                          stream: Stream.periodic(const Duration(seconds: 1), (count) => count),
+                          builder: (context, snapshot) {
+                            final now = DateTime.now();
+                            final time = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+                            return Text(
+                              time,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: _isDarkMode ? Colors.white : const Color(0xFF475569),
+                                letterSpacing: 1,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                      child: StreamBuilder(
-                        stream: Stream.periodic(const Duration(seconds: 1), (count) => count),
-                        builder: (context, snapshot) {
-                          final now = DateTime.now();
-                          final time = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-                          return Text(
-                            time,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: _isDarkMode ? Colors.white : const Color(0xFF475569),
-                              letterSpacing: 1,
-                            ),
-                          );
-                        },
+                      const SizedBox(width: 10),
+                    ] else ...[
+                      // Clock icon on mobile
+                      Container(
+                        decoration: BoxDecoration(
+                          color: _isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.access_time, color: _isDarkMode ? Colors.white : const Color(0xFF475569), size: 16),
+                          onPressed: () {
+                            final now = DateTime.now();
+                            final time = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(time),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            );
+                          },
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
+                      const SizedBox(width: 4),
+                    ],
                     // Notification
                     Container(
                       decoration: BoxDecoration(
                         color: _isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
                       ),
                       child: IconButton(
                         icon: Icon(
@@ -358,7 +390,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                               ? Icons.notifications_active 
                               : Icons.notifications_none,
                           color: _isDarkMode ? Colors.white : const Color(0xFF475569),
-                          size: 18,
+                          size: isMobile ? 16 : 18,
                         ),
                         onPressed: () {
                           _requestNotificationPermission();
@@ -377,16 +409,16 @@ class _DailyPlannerState extends State<DailyPlanner> {
                             ),
                           );
                         },
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        constraints: BoxConstraints(minWidth: isMobile ? 32 : 36, minHeight: isMobile ? 32 : 36),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: isMobile ? 4 : 6),
                     // View toggle
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(isMobile ? 6 : 8),
                       decoration: BoxDecoration(
                         color: _isWeeklyView ? Colors.blue.withOpacity(0.1) : (_isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
                         border: Border.all(
                           color: _isWeeklyView ? Colors.blue.withOpacity(0.3) : Colors.transparent,
                           width: 1,
@@ -401,19 +433,19 @@ class _DailyPlannerState extends State<DailyPlanner> {
                         child: Icon(
                           _isWeeklyView ? Icons.view_week : Icons.calendar_today,
                           color: _isWeeklyView ? Colors.blue : (_isDarkMode ? Colors.white : const Color(0xFF475569)),
-                          size: 18,
+                          size: isMobile ? 16 : 18,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: isMobile ? 4 : 6),
                     // More options menu
                     Container(
                       decoration: BoxDecoration(
                         color: _isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
                       ),
                       child: PopupMenuButton<String>(
-                        icon: Icon(Icons.more_horiz, color: _isDarkMode ? Colors.white : const Color(0xFF475569), size: 20),
+                        icon: Icon(Icons.more_horiz, color: _isDarkMode ? Colors.white : const Color(0xFF475569), size: isMobile ? 18 : 20),
                         onSelected: (value) {
                           switch (value) {
                             case 'search':
@@ -476,22 +508,22 @@ class _DailyPlannerState extends State<DailyPlanner> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: isMobile ? 4 : 8),
                     // Navigation right
                     Container(
                       decoration: BoxDecoration(
                         color: _isDarkMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
                       ),
                       child: IconButton(
-                        icon: Icon(Icons.chevron_right, color: _isDarkMode ? Colors.white : const Color(0xFF475569), size: 20),
+                        icon: Icon(Icons.chevron_right, color: _isDarkMode ? Colors.white : const Color(0xFF475569), size: isMobile ? 18 : 20),
                         onPressed: () {
                           setState(() {
                             _selectedDate = _selectedDate.add(const Duration(days: 1));
                             _editingHour = null;
                           });
                         },
-                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        constraints: BoxConstraints(minWidth: isMobile ? 36 : 40, minHeight: isMobile ? 36 : 40),
                       ),
                     ),
                   ],

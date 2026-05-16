@@ -5,7 +5,6 @@ const urlsToCache = [
   './main.dart.js',
   './flutter.js',
   './flutter_bootstrap.js',
-  './assets/',
   './manifest.json',
   './favicon.png',
 ];

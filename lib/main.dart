@@ -102,9 +102,11 @@ class _DailyPlannerState extends State<DailyPlanner> {
       decoded.forEach((dateKey, hours) {
         _allPlans[dateKey] = {};
         (hours as Map<String, dynamic>).forEach((hourStr, planData) {
+          final colorValue = planData['color'];
+          final Color color = colorValue is Color ? colorValue : Color(colorValue is int ? colorValue : 0xFF3B82F6);
           _allPlans[dateKey]![int.parse(hourStr)] = {
             'text': planData['text'],
-            'color': Color(planData['color']),
+            'color': color,
             'completed': planData['completed'] ?? false,
             'priority': planData['priority'] ?? 'medium',
             'repeat': planData['repeat'] ?? 'none',

@@ -35,7 +35,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
   final Map<String, Map<int, Map<String, dynamic>>> _allPlans = {};
   DateTime _selectedDate = DateTime.now();
   int? _editingHour;
-  Color _selectedColor = Colors.blue;
   Timer? _notificationTimer;
   int _lastNotifiedHour = -1;
   bool _isWeeklyView = false;
@@ -103,11 +102,8 @@ class _DailyPlannerState extends State<DailyPlanner> {
         decoded.forEach((dateKey, hours) {
           _allPlans[dateKey] = {};
           (hours as Map<String, dynamic>).forEach((hourStr, planData) {
-            final colorValue = planData['color'];
-            final int color = colorValue is int ? colorValue : (colorValue is Color ? colorValue.value : 0xFF3B82F6);
             _allPlans[dateKey]![int.parse(hourStr)] = {
               'text': planData['text'],
-              'color': color,
               'completed': planData['completed'] ?? false,
               'priority': planData['priority'] ?? 'medium',
               'repeat': planData['repeat'] ?? 'none',
@@ -151,10 +147,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
         final repeat = planData['repeat'] ?? 'none';
         if (repeat == 'none') return;
 
-        // Ensure color is an integer
-        final colorValue = planData['color'];
-        final int color = colorValue is int ? colorValue : (colorValue is Color ? colorValue.value : 0xFF3B82F6);
-
         if (repeat == 'daily') {
           final targetDate = planDate.add(const Duration(days: 1));
           if (targetDate.isAtSameMomentAs(tomorrow) || targetDate.isAfter(tomorrow)) {
@@ -165,7 +157,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
               'hour': hour,
               'planData': {
                 'text': planData['text'],
-                'color': color,
                 'completed': false,
                 'priority': planData['priority'],
                 'repeat': repeat,
@@ -182,7 +173,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
               'hour': hour,
               'planData': {
                 'text': planData['text'],
-                'color': color,
                 'completed': false,
                 'priority': planData['priority'],
                 'repeat': repeat,
@@ -216,11 +206,8 @@ class _DailyPlannerState extends State<DailyPlanner> {
     _allPlans.forEach((dateKey, hours) {
       encoded[dateKey] = {};
       hours.forEach((hour, planData) {
-        final colorValue = planData['color'];
-        final int colorInt = colorValue is int ? colorValue : (colorValue is Color ? colorValue.value : 0xFF3B82F6);
         encoded[dateKey]![hour.toString()] = {
           'text': planData['text'],
-          'color': colorInt,
           'completed': planData['completed'] ?? false,
           'priority': planData['priority'] ?? 'medium',
           'repeat': planData['repeat'] ?? 'none',
@@ -237,17 +224,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
     final today = DateTime(now.year, now.month, now.day);
     final selectedDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
     final isToday = today.isAtSameMomentAs(selectedDay);
-    final dayPlans = _allPlans[_dateKey(_selectedDate)] ?? {};
     final isMobile = MediaQuery.of(context).size.width < 600;
-
-    // Build gradient colors from daily slot colors
-    List<Color> gradientColors = [];
-    for (int i = 0; i < 24; i++) {
-      final planData = dayPlans[i];
-      final colorValue = planData?['color'] as int?;
-      final Color color = Color(colorValue ?? 0xFFE2E8F0);
-      gradientColors.add(color);
-    }
 
     return Scaffold(
       backgroundColor: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
@@ -257,22 +234,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
         toolbarHeight: isMobile ? 75 : 90,
         flexibleSpace: Column(
           children: [
-            // Color blocks at the top
-            Container(
-              height: isMobile ? 4 : 6,
-              margin: EdgeInsets.fromLTRB(isMobile ? 12 : 16, isMobile ? 8 : 12, isMobile ? 12 : 16, 0),
-              child: Row(
-                children: List.generate(24, (index) {
-                  final color = gradientColors[index];
-                  return Expanded(
-                    child: Container(
-                      color: color,
-                      margin: EdgeInsets.only(right: index < 23 ? 1 : 0),
-                    ),
-                  );
-                }),
-              ),
-            ),
             // Header content
             Expanded(
               child: Padding(
@@ -577,30 +538,26 @@ class _DailyPlannerState extends State<DailyPlanner> {
     final isPastDate = selectedDay.isBefore(today);
     final dayPlans = _allPlans[_dateKey(_selectedDate)] ?? {};
 
-    return Expanded(
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        separatorBuilder: (context, index) => const SizedBox(height: 8),
-        itemCount: 24,
-        itemBuilder: (context, index) {
-          final hour = index;
-          final isSleepHour = hour >= 0 && hour <= 8;
-          final isPastHour = isToday && hour < currentHour;
-          final isPast = isPastDate || isPastHour;
-          final isCurrent = isToday && hour == currentHour;
-          final isEditing = _editingHour == hour;
-          final planData = dayPlans[hour];
-          final plan = planData?['text'] ?? '';
-          final colorValue = planData?['color'] as int?;
-          final planColor = Color(colorValue ?? 0xFF3B82F6);
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemCount: 24,
+      itemBuilder: (context, index) {
+        final hour = index;
+        final isSleepHour = hour >= 0 && hour <= 8;
+        final isPastHour = isToday && hour < currentHour;
+        final isPast = isPastDate || isPastHour;
+        final isCurrent = isToday && hour == currentHour;
+        final isEditing = _editingHour == hour;
+        final planData = dayPlans[hour];
+        final plan = planData?['text'] ?? '';
 
-          if (isEditing) {
-            return _buildEditingSlot(hour, Colors.white, dayPlans);
-          }
+        if (isEditing) {
+          return _buildEditingSlot(hour, Colors.white, dayPlans);
+        }
 
-          return _buildSlot(hour, Colors.white, plan, planColor, isPast, isCurrent, isPastDate, isSleepHour);
-        },
-      ),
+        return _buildSlot(hour, Colors.white, plan, isPast, isCurrent, isPastDate, isSleepHour);
+      },
     );
   }
 
@@ -698,8 +655,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
                   final hour = entry.key;
                   final planData = entry.value;
                   final plan = planData['text'] ?? '';
-                  final colorValue = planData['color'] as int?;
-                  final planColor = Color(colorValue ?? 0xFF3B82F6);
                   final isCompleted = planData['completed'] ?? false;
                   
                   return ListTile(
@@ -708,16 +663,16 @@ class _DailyPlannerState extends State<DailyPlanner> {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: planColor.withOpacity(0.1),
+                        color: Colors.blue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         '${hour.toString().padLeft(2, '0')}:00',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: planColor,
+                          color: Colors.blue,
                         ),
                       ),
                     ),
@@ -738,10 +693,10 @@ class _DailyPlannerState extends State<DailyPlanner> {
                             height: 20,
                             margin: const EdgeInsets.only(right: 8),
                             decoration: BoxDecoration(
-                              color: isCompleted ? planColor : Colors.transparent,
+                              color: isCompleted ? Colors.blue : Colors.transparent,
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: planColor,
+                                color: Colors.blue,
                                 width: 2,
                               ),
                             ),
@@ -750,7 +705,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                                 : null,
                           ),
                         ),
-                        Expanded(
+                        Flexible(
                           child: Text(
                             plan,
                             style: TextStyle(
@@ -758,13 +713,15 @@ class _DailyPlannerState extends State<DailyPlanner> {
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                               decoration: isCompleted ? TextDecoration.lineThrough : null,
+                              decorationThickness: isCompleted ? 3 : null,
+                              decorationColor: isCompleted ? Colors.grey[600] : null,
                             ),
                           ),
                         ),
                       ],
                     ),
                   );
-                }).toList(),
+                }),
             ],
           ),
         );
@@ -772,7 +729,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
     );
   }
 
-  Widget _buildSlot(int hour, Color backgroundColor, String plan, Color planColor, bool isPast, bool isCurrent, bool isPastDate, bool isSleepHour) {
+  Widget _buildSlot(int hour, Color backgroundColor, String plan, bool isPast, bool isCurrent, bool isPastDate, bool isSleepHour) {
     final dateKey = _dateKey(_selectedDate);
     final now = DateTime.now();
     final currentMinute = now.minute;
@@ -792,7 +749,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: plan.isNotEmpty ? planColor.withOpacity(0.08) : (_isDarkMode ? const Color(0xFF334155) : Colors.white),
+        color: plan.isNotEmpty ? Colors.blue.withOpacity(0.08) : (_isDarkMode ? const Color(0xFF334155) : Colors.white),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -813,7 +770,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                   widthFactor: progressValue,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: planColor.withOpacity(0.2),
+                      color: Colors.blue.withOpacity(0.2),
                     ),
                   ),
                 ),
@@ -833,13 +790,13 @@ class _DailyPlannerState extends State<DailyPlanner> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        planColor.withOpacity(0.1),
-                        planColor.withOpacity(0.2),
+                        Colors.blue.withOpacity(0.1),
+                        Colors.blue.withOpacity(0.2),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: planColor.withOpacity(0.2),
+                      color: Colors.blue.withOpacity(0.2),
                       width: 1.5,
                     ),
                   ),
@@ -849,7 +806,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
-                      color: planColor,
+                      color: Colors.blue,
                     ),
                   ),
                 ),
@@ -871,10 +828,10 @@ class _DailyPlannerState extends State<DailyPlanner> {
                           height: 24,
                           margin: const EdgeInsets.only(right: 12),
                           decoration: BoxDecoration(
-                            color: isCompleted ? planColor : Colors.transparent,
+                            color: isCompleted ? Colors.blue : Colors.transparent,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: planColor,
+                              color: Colors.blue,
                               width: 2,
                             ),
                           ),
@@ -883,7 +840,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                               : null,
                         ),
                       ),
-                    Expanded(
+                    Flexible(
                       child: Text(
                         isPast && plan.isEmpty ? '--' : (plan.isEmpty ? 'Plan ekle' : plan),
                         style: TextStyle(
@@ -894,6 +851,8 @@ class _DailyPlannerState extends State<DailyPlanner> {
                           fontWeight: plan.isEmpty ? FontWeight.w400 : FontWeight.w600,
                           fontStyle: plan.isEmpty && !isPast ? FontStyle.italic : FontStyle.normal,
                           decoration: isCompleted ? TextDecoration.lineThrough : null,
+                          decorationThickness: isCompleted ? 3 : null,
+                          decorationColor: isCompleted ? Colors.grey[600] : null,
                         ),
                         textDirection: TextDirection.ltr,
                       ),
@@ -927,14 +886,14 @@ class _DailyPlannerState extends State<DailyPlanner> {
                     : Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: planColor.withOpacity(0.1),
+                          color: Colors.blue.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: planColor.withOpacity(0.2),
+                            color: Colors.blue.withOpacity(0.2),
                             width: 1,
                           ),
                         ),
-                        child: Icon(Icons.edit_outlined, color: planColor, size: 20),
+                        child: Icon(Icons.edit_outlined, color: Colors.blue, size: 20),
                       ),
                 onTap: isPast
                     ? (isSleepHour
@@ -943,7 +902,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                               if (!_allPlans.containsKey(dateKey)) {
                                 _allPlans[dateKey] = {};
                               }
-                              _allPlans[dateKey]![hour] = {'text': 'Uyku', 'color': Colors.purple.value};
+                              _allPlans[dateKey]![hour] = {'text': 'Uyku'};
                               _savePlans();
                             });
                           }
@@ -954,7 +913,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                               if (!_allPlans.containsKey(dateKey)) {
                                 _allPlans[dateKey] = {};
                               }
-                              _allPlans[dateKey]![hour] = {'text': 'Uyku', 'color': Colors.purple.value};
+                              _allPlans[dateKey]![hour] = {'text': 'Uyku'};
                               _savePlans();
                             });
                           }
@@ -974,8 +933,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
   Widget _buildEditingSlot(int hour, Color backgroundColor, Map<int, Map<String, dynamic>> dayPlans) {
     final planData = dayPlans[hour];
     final controller = TextEditingController(text: planData?['text'] ?? '');
-    final colorValue = planData?['color'] as int?;
-    Color selectedColor = Color(colorValue ?? 0xFF3B82F6);
     String selectedPriority = planData?['priority'] ?? 'medium';
     String selectedRepeat = planData?['repeat'] ?? 'none';
     List<String> selectedReminders = List<String>.from(planData?['reminders'] ?? []);
@@ -988,7 +945,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
         }
         _allPlans[dateKey]![hour] = {
           'text': controller.text.trim(),
-          'color': selectedColor.value,
           'priority': selectedPriority,
           'repeat': selectedRepeat,
           'reminders': selectedReminders,
@@ -1087,30 +1043,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => _showColorPickerDialog(selectedColor, (color) {
-                      setState(() {
-                        _selectedColor = color;
-                        selectedColor = color;
-                        savePlan();
-                        _savePlans();
-                      });
-                    }),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: selectedColor,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.grey[300]!,
-                          width: 2,
-                        ),
-                      ),
-                      child: const Icon(Icons.palette, color: Colors.white, size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
                     onTap: () => _showPriorityPickerDialog(selectedPriority, (priority) {
                       setState(() {
                         selectedPriority = priority;
@@ -1125,7 +1057,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                         color: _getPriorityColor(selectedPriority),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: Colors.grey[300]!,
+                          color: Colors.grey[300] ?? const Color(0xFFD1D5DB),
                           width: 2,
                         ),
                       ),
@@ -1148,7 +1080,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
                         color: _getRepeatColor(selectedRepeat),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: Colors.grey[300]!,
+                          color: Colors.grey[300] ?? const Color(0xFFD1D5DB),
                           width: 2,
                         ),
                       ),
@@ -1168,10 +1100,10 @@ class _DailyPlannerState extends State<DailyPlanner> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: selectedReminders.isNotEmpty ? Colors.orange : Colors.grey[100],
+                        color: selectedReminders.isNotEmpty ? Colors.orange : Colors.grey[100] ?? const Color(0xFFF3F4F6),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: Colors.grey[300]!,
+                          color: Colors.grey[300] ?? const Color(0xFFD1D5DB),
                           width: 2,
                         ),
                       ),
@@ -1195,12 +1127,10 @@ class _DailyPlannerState extends State<DailyPlanner> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [selectedColor, selectedColor.withOpacity(0.8)],
-                        ),
+                        color: Colors.blue,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: Colors.grey[300]!,
+                          color: Colors.grey[300] ?? const Color(0xFFD1D5DB),
                           width: 2,
                         ),
                       ),
@@ -1231,117 +1161,14 @@ class _DailyPlannerState extends State<DailyPlanner> {
       'high': const Color(0xFFEF4444),
       'medium': const Color(0xFFF59E0B),
       'low': const Color(0xFF10B981),
-      'none': Colors.grey[300],
+      'none': Colors.grey[300] ?? const Color(0xFFD1D5DB),
     };
-    return colors[priority] ?? Colors.grey[300]!;
+    return colors[priority] ?? Colors.grey[300] ?? const Color(0xFFD1D5DB);
   }
 
   Color _getRepeatColor(String repeat) {
-    if (repeat == 'none') return Colors.grey[300]!;
+    if (repeat == 'none') return Colors.grey[300] ?? const Color(0xFFD1D5DB);
     return Colors.purple;
-  }
-
-  void _showColorPickerDialog(Color selectedColor, Function(Color) onColorSelected) {
-    final colors = [
-      Colors.blue,
-      const Color(0xFFEF4444),
-      const Color(0xFF10B981),
-      const Color(0xFFF59E0B),
-      const Color(0xFF8B5CF6),
-      const Color(0xFFEC4899),
-      const Color(0xFF06B6D4),
-      const Color(0xFF6366F1),
-      const Color(0xFF84CC16),
-      const Color(0xFF64748B),
-      const Color(0xFFDC2626),
-      const Color(0xFF0891B2),
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Renk Seç',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.close, size: 18, color: Color(0xFF6B7280)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1,
-              ),
-              itemCount: colors.length,
-              itemBuilder: (context, index) {
-                final color = colors[index];
-                return GestureDetector(
-                  onTap: () {
-                    onColorSelected(color);
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: selectedColor == color ? Colors.white : Colors.transparent,
-                        width: 3,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: selectedColor == color
-                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 24)
-                        : null,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showPriorityPickerDialog(String selectedPriority, Function(String) onPrioritySelected) {
@@ -1598,17 +1425,17 @@ class _DailyPlannerState extends State<DailyPlanner> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: selectedPriority == priority ? colors[priority]! : Colors.grey[100],
+          color: selectedPriority == priority ? colors[priority]! : Colors.grey[100] ?? const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: selectedPriority == priority ? colors[priority]! : Colors.grey[300]!,
+            color: selectedPriority == priority ? colors[priority]! : Colors.grey[300] ?? const Color(0xFFD1D5DB),
             width: 2,
           ),
         ),
         child: Text(
           labels[priority]!,
           style: TextStyle(
-            color: selectedPriority == priority ? Colors.white : Colors.grey[700],
+            color: selectedPriority == priority ? Colors.white : Colors.grey[700] ?? const Color(0xFF374151),
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -1628,17 +1455,17 @@ class _DailyPlannerState extends State<DailyPlanner> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: selectedRepeat == repeat ? Colors.purple.withOpacity(0.1) : Colors.grey[100],
+          color: selectedRepeat == repeat ? Colors.purple.withOpacity(0.1) : Colors.grey[100] ?? const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: selectedRepeat == repeat ? Colors.purple.withOpacity(0.3) : Colors.grey[300]!,
+            color: selectedRepeat == repeat ? Colors.purple.withOpacity(0.3) : Colors.grey[300] ?? const Color(0xFFD1D5DB),
             width: 2,
           ),
         ),
         child: Text(
           labels[repeat]!,
           style: TextStyle(
-            color: selectedRepeat == repeat ? Colors.purple : Colors.grey[700],
+            color: selectedRepeat == repeat ? Colors.purple : Colors.grey[700] ?? const Color(0xFF374151),
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -1662,10 +1489,10 @@ class _DailyPlannerState extends State<DailyPlanner> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.orange.withOpacity(0.1) : Colors.grey[100],
+          color: isSelected ? Colors.orange.withOpacity(0.1) : Colors.grey[100] ?? const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? Colors.orange.withOpacity(0.3) : Colors.grey[300]!,
+            color: isSelected ? Colors.orange.withOpacity(0.3) : Colors.grey[300] ?? const Color(0xFFD1D5DB),
             width: 2,
           ),
         ),
@@ -1680,7 +1507,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
             Text(
               reminder,
               style: TextStyle(
-                color: isSelected ? Colors.orange : Colors.grey[700],
+                color: isSelected ? Colors.orange : Colors.grey[700] ?? const Color(0xFF374151),
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
@@ -1942,24 +1769,22 @@ class _DailyPlannerState extends State<DailyPlanner> {
                       final date = result['date'] as DateTime;
                       final hour = result['hour'] as int;
                       final plan = result['plan'] as Map<String, dynamic>;
-                      final colorValue = plan['color'] as int?;
-                      final planColor = Color(colorValue ?? 0xFF3B82F6);
 
                       return ListTile(
                         leading: Container(
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: planColor.withOpacity(0.1),
+                            color: Colors.blue.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             '${hour.toString().padLeft(2, '0')}:00',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
-                              color: planColor,
+                              color: Colors.blue,
                             ),
                           ),
                         ),
@@ -2002,7 +1827,6 @@ class _DailyPlannerState extends State<DailyPlanner> {
       hours.forEach((hour, planData) {
         exportData[dateKey][hour.toString()] = {
           'text': planData['text'],
-          'color': planData['color'].value,
           'completed': planData['completed'] ?? false,
           'priority': planData['priority'] ?? 'medium',
           'repeat': planData['repeat'] ?? 'none',
@@ -2015,7 +1839,7 @@ class _DailyPlannerState extends State<DailyPlanner> {
     // In web, we can create a download using HTML
     final blob = html.Blob([jsonString], 'application/json');
     final url = html.Url.createObjectUrlFromBlob(blob);
-    final anchor = html.AnchorElement(href: url)
+    html.AnchorElement(href: url)
       ..setAttribute('download', 'cogniplan_export_${_dateKey(DateTime.now())}.json')
       ..click();
     html.Url.revokeObjectUrl(url);

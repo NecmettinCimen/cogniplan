@@ -1,22 +1,27 @@
-const CACHE_NAME = 'cogniplan-v2';
+const CACHE_NAME = 'cogniplan-v3';
 const urlsToCache = [
   './',
+  './index.html',
   './main.dart.js',
   './flutter.js',
   './flutter_bootstrap.js',
   './assets/',
   './manifest.json',
-  './icons/Icon-192.png',
-  './icons/Icon-512.png',
-  './icons/Icon-maskable-192.png',
-  './icons/Icon-maskable-512.png',
   './favicon.png',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
+      .then((cache) => {
+        return cache.addAll(urlsToCache.map(url => {
+          return new Request(url, { cache: 'reload' });
+        })).catch(error => {
+          console.log('Cache addAll failed:', error);
+          // Continue even if some files fail to cache
+          return Promise.resolve();
+        });
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -36,9 +41,14 @@ self.addEventListener('fetch', (event) => {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME)
             .then((cache) => {
-              cache.put(event.request, responseToCache);
+              cache.put(event.request, responseToCache).catch(error => {
+                console.log('Cache put failed:', error);
+              });
             });
           return response;
+        }).catch(error => {
+          console.log('Fetch failed:', error);
+          throw error;
         });
       })
   );
